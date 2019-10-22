@@ -1,0 +1,7 @@
+div.cardholderMoveable {
+    position: absolute;
+}
+
+div.cardholderNonMoveable {
+    position: fixed;
+}
