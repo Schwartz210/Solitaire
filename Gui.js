@@ -63,10 +63,42 @@ function getImage(card){
     img.id = 'drag' + card.id;
     if (card.displayStatus == 3){
         img.height = Size.cardHeightTop();
-    } else if (card.displayStatus == 3){
+    } else if (card.displayStatus == 2){
         img.height = Size.cardHeight();
     }
     return img;
+}
+
+function stackCard(element, targetCard, movingCard){
+    targetCard.displayStatus = 3;  //shows just top
+    document.getElementById('card' + targetCard.id).src = targetCard.getImageFile();
+    document.getElementById('card' + targetCard.id).height = Size.cardHeightTop();
+    var targetCardDiv = document.getElementById(IDConverter.cardToContainer(targetCard.id));
+    targetCardDiv.height = Size.cardHeightTop();
+    targetCardDiv.style.top = targetCard.coord[0];
+    targetCardDiv.style.left = targetCard.coord[1];
+    movingCard.coord[0] = targetCard.coord[0];
+    movingCard.coord[1] = targetCard.coord[1] + Size.cardHeightTop();
+    element.style.left = movingCard.coord[0] + 'px';
+    element.style.top = movingCard.coord[1] + 'px';
+    targetCard.otherCard = movingCard;
+}
+
+function displayFullBackOfLowestCoveredCard(vacatedCardXAxis){
+    var candidates = gameEngine.deck.getCardsByDisplayStatus(0, null);
+    var cardToShow;
+    var max = -1;
+    for (var candidate of candidates){
+        if (candidate.coord[0] == vacatedCardXAxis && candidate.coord[1] > max){
+            max = candidate.coord[1];
+            cardToShow = candidate;
+        }
+    }
+    cardToShow.displayStatus = 1;
+    var image = document.getElementById(IDConverter.cardToImage(cardToShow.id));
+    image.src = cardToShow.getImageFile();
+    image.height = Size.cardHeight();
+    console.log(cardToShow.getImageFile());
 }
 
 function dragElement(elmnt) {
@@ -115,15 +147,13 @@ function dragElement(elmnt) {
             var dragImageIdToCardId;
             var dragContainerId;
             while (elmnt.childElementCount > 1){
-                if (elmnt.lastElementChild.id != null){
+                if (elmnt.lastElementChild.tagName != 'BR'){
                     dragImageIdToCardId = IDConverter.dragImageIdToCardId(elmnt.lastElementChild.id);
                     dragContainerId = IDConverter.cardToContainer(dragImageIdToCardId);
-                    console.log(dragImageIdToCardId);
-                    document.getElementById(dragContainerId).style.visibility = 'visable';
+                    document.getElementById(dragContainerId).style.visibility = 'visible';
                 }
                 elmnt.removeChild(elmnt.lastElementChild);
             }
-
         }
         currentlyDragging = false;
         document.onmouseup = null;
@@ -133,14 +163,19 @@ function dragElement(elmnt) {
         for (var targetCard of gameEngine.deck.getCardsByDisplayStatus(2, movingCardId)){
             if (targetCard.collision(pos3, pos4)){
                 if (movingCard.canStack(targetCard)){
-                    targetCard.displayStatus = 3;
-                    document.getElementById('card' + targetCard.id).src = targetCard.getImageFile();
-                    document.getElementById('card' + targetCard.id).height = Size.cardHeightTop();
-                    movingCard.coord[0] = targetCard.coord[0];
-                    movingCard.coord[1] = targetCard.coord[1] + Size.cardHeightTop();
-                    elmnt.style.left = movingCard.coord[0] + 'px';
-                    elmnt.style.top = movingCard.coord[1] + 'px';
-                    targetCard.otherCard = movingCard;
+                    var vacatedCardXAxis = movingCard.coord[0];
+                    var cardOrder = [targetCard, movingCard];
+                    while (movingCard.otherCard != null){
+                        cardOrder.push(movingCard.otherCard);
+                        movingCard = movingCard.otherCard;
+                    }
+                    stackCard(elmnt, targetCard, movingCard);
+                    for (var i=0;i<cardOrder.length-1;i++){
+                        targetCard = cardOrder[i];
+                        movingCard = cardOrder[i+1];
+                        stackCard(document.getElementById(IDConverter.cardToContainer(movingCard.id)), targetCard, movingCard);
+                    }
+                    displayFullBackOfLowestCoveredCard(vacatedCardXAxis);
                     return;
                 }
             }
