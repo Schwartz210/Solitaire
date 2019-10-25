@@ -70,18 +70,23 @@ function getImage(card){
 }
 
 function stackCard(element, targetCard, movingCard){
+    console.log('id: '+ targetCard.id +'  targetCard.coord: '+targetCard.coord[0]+ "  "+targetCard.coord[1]);
     targetCard.displayStatus = 3;  //shows just top
     document.getElementById('card' + targetCard.id).src = targetCard.getImageFile();
     document.getElementById('card' + targetCard.id).height = Size.cardHeightTop();
     var targetCardDiv = document.getElementById(IDConverter.cardToContainer(targetCard.id));
     targetCardDiv.height = Size.cardHeightTop();
-    targetCardDiv.style.top = targetCard.coord[0];
-    targetCardDiv.style.left = targetCard.coord[1];
+    targetCardDiv.style.top = targetCard.coord[0] + 'px';
+    targetCardDiv.style.left = targetCard.coord[1] + 'px';
     movingCard.coord[0] = targetCard.coord[0];
     movingCard.coord[1] = targetCard.coord[1] + Size.cardHeightTop();
+    movingCard.setBottomRightCoord();
+    targetCard.setBottomRightCoord();
     element.style.left = movingCard.coord[0] + 'px';
     element.style.top = movingCard.coord[1] + 'px';
     targetCard.otherCard = movingCard;
+    console.log('id: '+ targetCard.id +'  targetCard.coord: '+targetCard.coord[0]+ "  "+targetCard.coord[1]);
+    console.log('id: '+ targetCardDiv.id +'  targetCardDiv.top: '+targetCardDiv.style.top+ "  left: "+targetCardDiv.style.left);
 }
 
 function displayFullBackOfLowestCoveredCard(vacatedCardXAxis){
@@ -94,11 +99,14 @@ function displayFullBackOfLowestCoveredCard(vacatedCardXAxis){
             cardToShow = candidate;
         }
     }
-    cardToShow.displayStatus = 1;
-    var image = document.getElementById(IDConverter.cardToImage(cardToShow.id));
-    image.src = cardToShow.getImageFile();
-    image.height = Size.cardHeight();
-    console.log(cardToShow.getImageFile());
+    if (cardToShow != null){
+        cardToShow.displayStatus = 1;
+        revealCard(cardToShow);
+        cardToShow.setBottomRightCoord();
+        var image = document.getElementById(IDConverter.cardToImage(cardToShow.id));
+        image.src = cardToShow.getImageFile();
+        image.height = Size.cardHeight();
+    }
 }
 
 function dragElement(elmnt) {
@@ -110,7 +118,7 @@ function dragElement(elmnt) {
         e.preventDefault();
         pos3 = e.clientX;
         pos4 = e.clientY;
-        document.onmouseup = closeDragElement;
+        document.onmouseup = drop;
         document.onmousemove = elementDrag;
     }
 
@@ -141,7 +149,7 @@ function dragElement(elmnt) {
         elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
     }
 
-    function closeDragElement() {
+    function drop() {
         if (draggingStack){
             draggingStack = false;
             var dragImageIdToCardId;
@@ -169,12 +177,13 @@ function dragElement(elmnt) {
                         cardOrder.push(movingCard.otherCard);
                         movingCard = movingCard.otherCard;
                     }
-                    stackCard(elmnt, targetCard, movingCard);
                     for (var i=0;i<cardOrder.length-1;i++){
                         targetCard = cardOrder[i];
                         movingCard = cardOrder[i+1];
+                        console.log('targetCard: '+targetCard+ "  -  "+"movingCard: "+movingCard);
                         stackCard(document.getElementById(IDConverter.cardToContainer(movingCard.id)), targetCard, movingCard);
                     }
+                    console.log('\n\n');
                     displayFullBackOfLowestCoveredCard(vacatedCardXAxis);
                     return;
                 }
@@ -182,8 +191,19 @@ function dragElement(elmnt) {
         }
         elmnt.style.left = movingCard.coord[0] + 'px';
         elmnt.style.top = movingCard.coord[1] + 'px';
-
     }
+}
 
-
+function revealCard(card){
+    var imageId = IDConverter.cardToImage(card.id);
+    var image = document.getElementById(imageId);
+    var containerId = IDConverter.cardToContainer(card.id);
+    var container = document.getElementById(containerId);
+    image.onclick = function(){
+        card.displayStatus = 2;
+        image.src = card.getImageFile();
+        card.divClassName = 'cardholderMoveable';
+        dragElement(container);
+        container.className = 'cardholderMoveable';
+    }
 }
