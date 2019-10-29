@@ -1,5 +1,6 @@
 var currentlyDragging = false;
 var draggingStack = false;
+var slotTracker = new SlotTracker();
 
 function setBackGround(){}
 
@@ -70,23 +71,28 @@ function getImage(card){
 }
 
 function stackCard(element, targetCard, movingCard){
-    console.log('id: '+ targetCard.id +'  targetCard.coord: '+targetCard.coord[0]+ "  "+targetCard.coord[1]);
-    targetCard.displayStatus = 3;  //shows just top
-    document.getElementById('card' + targetCard.id).src = targetCard.getImageFile();
-    document.getElementById('card' + targetCard.id).height = Size.cardHeightTop();
-    var targetCardDiv = document.getElementById(IDConverter.cardToContainer(targetCard.id));
-    targetCardDiv.height = Size.cardHeightTop();
-    targetCardDiv.style.top = targetCard.coord[0] + 'px';
-    targetCardDiv.style.left = targetCard.coord[1] + 'px';
-    movingCard.coord[0] = targetCard.coord[0];
-    movingCard.coord[1] = targetCard.coord[1] + Size.cardHeightTop();
+    slotTracker.alter(movingCard.coord[0], '-');
+    if (targetCard != null){
+        slotTracker.alter(targetCard.coord[0], '+');
+        targetCard.displayStatus = 3;  //shows just top
+        document.getElementById('card' + targetCard.id).src = targetCard.getImageFile();
+        document.getElementById('card' + targetCard.id).height = Size.cardHeightTop();
+        var targetCardDiv = document.getElementById(IDConverter.cardToContainer(targetCard.id));
+        targetCardDiv.height = Size.cardHeightTop();
+        targetCardDiv.style.left = targetCard.coord[0] + 'px';
+        targetCardDiv.style.top = targetCard.coord[1] + 'px';
+        targetCard.setBottomRightCoord();
+        targetCard.otherCard = movingCard;
+        movingCard.coord[0] = targetCard.coord[0];
+        movingCard.coord[1] = targetCard.coord[1] + Size.cardHeightTop();
+    } else {
+        var mouseX = parseInt(String(element.style.left).replace('px',''));
+        movingCard.coord[0] = slotTracker.getSlot(mouseX);
+        movingCard.coord[1] = 0;
+    }
     movingCard.setBottomRightCoord();
-    targetCard.setBottomRightCoord();
     element.style.left = movingCard.coord[0] + 'px';
     element.style.top = movingCard.coord[1] + 'px';
-    targetCard.otherCard = movingCard;
-    console.log('id: '+ targetCard.id +'  targetCard.coord: '+targetCard.coord[0]+ "  "+targetCard.coord[1]);
-    console.log('id: '+ targetCardDiv.id +'  targetCardDiv.top: '+targetCardDiv.style.top+ "  left: "+targetCardDiv.style.left);
 }
 
 function displayFullBackOfLowestCoveredCard(vacatedCardXAxis){
@@ -171,26 +177,40 @@ function dragElement(elmnt) {
         for (var targetCard of gameEngine.deck.getCardsByDisplayStatus(2, movingCardId)){
             if (targetCard.collision(pos3, pos4)){
                 if (movingCard.canStack(targetCard)){
-                    var vacatedCardXAxis = movingCard.coord[0];
-                    var cardOrder = [targetCard, movingCard];
-                    while (movingCard.otherCard != null){
-                        cardOrder.push(movingCard.otherCard);
-                        movingCard = movingCard.otherCard;
-                    }
-                    for (var i=0;i<cardOrder.length-1;i++){
-                        targetCard = cardOrder[i];
-                        movingCard = cardOrder[i+1];
-                        console.log('targetCard: '+targetCard+ "  -  "+"movingCard: "+movingCard);
-                        stackCard(document.getElementById(IDConverter.cardToContainer(movingCard.id)), targetCard, movingCard);
-                    }
-                    console.log('\n\n');
-                    displayFullBackOfLowestCoveredCard(vacatedCardXAxis);
+                    displayFullBackOfLowestCoveredCard(movingCard.coord[0]);
+                    moveStack(movingCard, targetCard);
                     return;
                 }
             }
         }
+        if (slotTracker.isEmptySlot(pos3) && movingCard.rank == 'K'){
+            displayFullBackOfLowestCoveredCard(movingCard.coord[0]);
+            moveStack(movingCard, null, elmnt);
+        }
         elmnt.style.left = movingCard.coord[0] + 'px';
         elmnt.style.top = movingCard.coord[1] + 'px';
+    }
+}
+
+function moveStack(movingCard, targetCard, element){
+    var cardOrder;
+    if (targetCard != null){
+        cardOrder = [targetCard, movingCard];
+    } else {
+        var mouseX = parseInt(String(element.style.left).replace('px',''));
+        movingCard.coord[0] = slotTracker.getSlot(mouseX);
+        movingCard.coord[1] = 0;
+        cardOrder = [movingCard];
+    }
+
+    while (movingCard.otherCard != null){
+        cardOrder.push(movingCard.otherCard);
+        movingCard = movingCard.otherCard;
+    }
+    for (var i=0;i<cardOrder.length-1;i++){
+        targetCard = cardOrder[i];
+        movingCard = cardOrder[i+1];
+        stackCard(document.getElementById(IDConverter.cardToContainer(movingCard.id)), targetCard, movingCard);
     }
 }
 
