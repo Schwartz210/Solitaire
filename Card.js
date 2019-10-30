@@ -5,7 +5,8 @@ class Card {
         this.id = id;
         this.displayStatus = -1;
         this.imageName = imageName;
-        this.otherCard = null;
+        this.upCard = null;
+        this.downCard = null;
         this.coord = [-1, -1];
         this.bottomRightCoord = [-1, -1];
         this.divClassName = null;

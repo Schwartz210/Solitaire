@@ -82,7 +82,8 @@ function stackCard(element, targetCard, movingCard){
         targetCardDiv.style.left = targetCard.coord[0] + 'px';
         targetCardDiv.style.top = targetCard.coord[1] + 'px';
         targetCard.setBottomRightCoord();
-        targetCard.otherCard = movingCard;
+        targetCard.downCard = movingCard;
+        movingCard.upCard = targetCard;
         movingCard.coord[0] = targetCard.coord[0];
         movingCard.coord[1] = targetCard.coord[1] + Size.cardHeightTop();
     } else {
@@ -106,12 +107,7 @@ function displayFullBackOfLowestCoveredCard(vacatedCardXAxis){
         }
     }
     if (cardToShow != null){
-        cardToShow.displayStatus = 1;
-        revealCard(cardToShow);
-        cardToShow.setBottomRightCoord();
-        var image = document.getElementById(IDConverter.cardToImage(cardToShow.id));
-        image.src = cardToShow.getImageFile();
-        image.height = Size.cardHeight();
+        showCardBody(cardToShow, false);
     }
 }
 
@@ -133,16 +129,15 @@ function dragElement(elmnt) {
             currentlyDragging = true;
             var cardId = IDConverter.containerToCard(elmnt.id);
             var card = gameEngine.deck.cardMap.get(cardId);
-            if (card.otherCard != null){
+            if (card.downCard != null){
                 draggingStack = true;
-                var tempCard = card.otherCard;
+                var tempCard = card.downCard;
                 while (tempCard != null){
                     elmnt.appendChild(document.createElement('br'));
                     elmnt.appendChild(getImage(tempCard));
                     document.getElementById(IDConverter.cardToContainer(tempCard.id)).style.visibility = 'hidden';
-                    tempCard = tempCard.otherCard;
+                    tempCard = tempCard.downCard;
                 }
-            } else {
             }
         }
         e = e || window.event;
@@ -177,6 +172,9 @@ function dragElement(elmnt) {
         for (var targetCard of gameEngine.deck.getCardsByDisplayStatus(2, movingCardId)){
             if (targetCard.collision(pos3, pos4)){
                 if (movingCard.canStack(targetCard)){
+                    if (movingCard.upCard != null){
+                        showCardBody(movingCard.upCard, true);
+                    }
                     displayFullBackOfLowestCoveredCard(movingCard.coord[0]);
                     moveStack(movingCard, targetCard);
                     return;
@@ -203,9 +201,9 @@ function moveStack(movingCard, targetCard, element){
         cardOrder = [movingCard];
     }
 
-    while (movingCard.otherCard != null){
-        cardOrder.push(movingCard.otherCard);
-        movingCard = movingCard.otherCard;
+    while (movingCard.downCard != null){
+        cardOrder.push(movingCard.downCard);
+        movingCard = movingCard.downCard;
     }
     for (var i=0;i<cardOrder.length-1;i++){
         targetCard = cardOrder[i];
@@ -214,15 +212,25 @@ function moveStack(movingCard, targetCard, element){
     }
 }
 
-function revealCard(card){
-    var imageId = IDConverter.cardToImage(card.id);
+function showCardBody(cardToShow, front){
+
+    if (front){
+        cardToShow.displayStatus = 2;
+    } else {
+        cardToShow.displayStatus = 1;
+    }
+    var imageId = IDConverter.cardToImage(cardToShow.id);
     var image = document.getElementById(imageId);
-    var containerId = IDConverter.cardToContainer(card.id);
+    var containerId = IDConverter.cardToContainer(cardToShow.id);
     var container = document.getElementById(containerId);
+    image.height = Size.cardHeight();
+    cardToShow.setBottomRightCoord();
+    image.src = cardToShow.getImageFile();
     image.onclick = function(){
-        card.displayStatus = 2;
-        image.src = card.getImageFile();
-        card.divClassName = 'cardholderMoveable';
+        cardToShow.displayStatus = 2;
+        image.src = cardToShow.getImageFile();
+        console.log("Card: "+cardToShow.id + "  Image: "+cardToShow.getImageFile());
+        cardToShow.divClassName = 'cardholderMoveable';
         dragElement(container);
         container.className = 'cardholderMoveable';
     }
