@@ -3,6 +3,10 @@ class IDConverter {
         return 'card' + cardId;
     }
 
+    static imageToCard(imageId){
+        return imageId.slice(4, imageId.length);
+    }
+
     static cardToContainer(cardId){
         return 'div-' + cardId;
     }

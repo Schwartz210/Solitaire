@@ -1,7 +1,19 @@
 div.cardholderMoveable {
     position: absolute;
+    display: block;
 }
 
 div.cardholderNonMoveable {
+    position: fixed;
+    display: block;
+}
+
+div.hide {
+    display: none;
+}
+
+div.backgroundContainer {
+    left: 0px;
+    top: 0px;
     position: fixed;
 }

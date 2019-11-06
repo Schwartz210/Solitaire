@@ -1,13 +1,8 @@
 class SlotTracker {
     constructor(){
-        this.map = {
-            0: 1,
-            110: 2,
-            220: 3,
-            330: 4,
-            440: 5,
-            550: 6,
-            660: 7,
+        this.map = {};
+        for (var i=0;i<7;i++){
+            this.map[Size.ySlot(i)] = i+1;
         }
     }
 
