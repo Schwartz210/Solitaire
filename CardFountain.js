@@ -7,7 +7,6 @@ var fSlots = [Size.ySlot(1), Size.ySlot(1)+Size.cardWidthLeftSeg(), Size.ySlot(1
 function fReset(cards){
     fAvailable = cards;
     for (var card of cards){
-        card.createVisualElements();
         card.setDisplayStatus(Card.DISPLAY_HIDDEN());
         allFountainCards.add(card);
     }
@@ -69,7 +68,6 @@ function fOnclick(){
             fDisplayed.push(fAvailable.pop());
         }
     }
-    console.log(fDisplayed);
     displayFountainCards();
     if (fAvailable.length == 0){
         document.getElementById('fountain').src = 'Art/emptyfountain.png';

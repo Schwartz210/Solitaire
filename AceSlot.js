@@ -40,6 +40,9 @@ class AceSlot {
     }
 
     place(card, mouseX, mouseY){
+        if (card.upCard != null){
+            card.upCard.setDisplayStatus(Card.DISPLAY_FULL_FRONT());
+        }
         var slot = this.isAceSlot(mouseX, mouseY);
         card.coord[0] = slot;
         card.coord[1] = 0;

@@ -11,6 +11,8 @@ class Card {
         this.coord = [-1, -1];
         this.bottomRightCoord = [-1, -1];
         this.divClassName = null;
+        this.createVisualElements();
+        this.setDisplayStatus(Card.DISPLAY_HIDDEN());
     }
 
     static DISPLAY_TOP_BACK(){return 0;}
@@ -37,59 +39,53 @@ class Card {
         this.container = document.createElement('div');
         this.container.className = this.divClassName;
         this.container.id = IDConverter.cardToContainer(this.id);
-        if (this.divClassName == 'cardholderMoveable'){
-            dragElement(this.container);
-        }
         this.image.id = IDConverter.cardToImage(this.id);
         this.container.appendChild(this.image);
         document.getElementById('body').appendChild(this.container);
     }
 
     setDisplayStatus(status){
-        var imageId = IDConverter.cardToImage(this.id);
-        var image = document.getElementById(imageId);
-        var containerId = IDConverter.cardToContainer(this.id);
-        var container = document.getElementById(containerId);
         switch (status) {
             case Card.DISPLAY_TOP_BACK():
-                this.divClassName = 'cardholderNonMoveable';
-                image = new Image();
-                image.src = 'Art/tops/back.png';
-                image.height = Size.cardHeightTop();
+                this.container.className = 'cardholderNonMoveable';
+                this.image.src = 'Art/tops/back.png';
+                this.image.width = Size.cardWidth();
+                this.image.height = Size.cardHeightTop();
                 break;
             case Card.DISPLAY_FULL_BACK():
-                this.divClassName = 'cardholderMoveable';
-                container.className = 'cardholderMoveable';
-                image.src = 'Art/back.png';
-                image.height = Size.cardHeight();
-                image.onclick = function(){
+                //this.divClassName = 'cardholderMoveable';
+                this.container.className = 'cardholderMoveable';
+                this.image.src = 'Art/back.png';
+                this.image.height = Size.cardHeight();
+                this.image.onclick = function(){
                     var cardId = IDConverter.imageToCard(this.id);
                     var card = gameEngine.deck.cardMap.get(cardId);
                     card.setDisplayStatus(2);
                 };
                 break;
             case Card.DISPLAY_FULL_FRONT():
-                image.src = 'Art/' + this.imageName;
-                image.width = Size.cardWidth();
-                image.height = Size.cardHeight();
-                this.divClassName = 'cardholderMoveable';
-                dragElement(container);
-                container.className = 'cardholderMoveable';
+                this.image.src = 'Art/' + this.imageName;
+                this.image.width = Size.cardWidth();
+                this.image.height = Size.cardHeight();
+                //this.divClassName = 'cardholderMoveable';
+                this.container.className = 'cardholderMoveable';
+                dragElement(this.container);
+
                 break;
             case Card.DISPLAY_TOP_FRONT():
-                image.src = 'Art/tops/' + this.imageName;
-                image.height = Size.cardHeightTop();
+                this.image.src = 'Art/tops/' + this.imageName;
+                this.image.height = Size.cardHeightTop();
                 break;
             case Card.DISPLAY_HIDDEN():
-                container.style.left = Size.boardWidth();
-                container.style.top = Size.boardHeight();
-                container.className = 'hide';
+                this.container.style.left = Size.boardWidth();
+                this.container.style.top = Size.boardHeight();
+                this.container.className = 'hide';
                 break;
             case Card.DISPLAY_LEFT():
-                image.src = 'Art/left/' + this.imageName;
-                image.height = Size.cardHeight();
-                image.width = Size.cardWidthLeftSeg();
-                container.className = 'cardholderNonMoveable';
+                this.image.src = 'Art/left/' + this.imageName;
+                this.image.height = Size.cardHeight();
+                this.image.width = Size.cardWidthLeftSeg();
+                this.container.className = 'cardholderNonMoveable';
                 break;
             default:
                 break;
@@ -168,8 +164,6 @@ class Deck {
     constructor(){
         this.cardMap = new Map();
         this.cards = this.createCards();
-        this.cardsLower = [];
-        this.reset();
     }
 
     static getRanks(){
@@ -184,8 +178,10 @@ class Deck {
         this.availableCards = this.cards.slice(0);
         this.unavailableCards = [];
         this.shuffle();
-        this.setLowerBoard();
         this.fountainCards = this.drawMulti(24);
+        this.cardsLowerReverse = this.drawMulti(21);
+        this.cardsLowerFaceup = this.drawMulti(7);
+        assignLowerCoordinates(this.cardsLowerReverse, this.cardsLowerFaceup);
     }
 
     createCards(){
@@ -241,17 +237,9 @@ class Deck {
         return cards;
     }
 
-    setLowerBoard(){
-        this.cardsLower = this.drawMulti(28);
-        this.cardsLower = assignLowerCoordinates(this.cardsLower);
-        for (var card of this.cardsLower){
-            card.setBottomRightCoord();
-        }
-    }
-
     getCardsByDisplayStatus(displayStatus, excludedId){
         var cards = [];
-        for (var card of this.cardsLower){
+        for (var card of this.cards){
             if (card.displayStatus == displayStatus && card.id != excludedId){
                 cards.push(card);
             }

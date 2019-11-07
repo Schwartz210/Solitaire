@@ -26,7 +26,6 @@ function setBackGround(){
     fountainContainer.style.top = 0;
     fountainContainer.className = 'cardholderNonMoveable';
     document.getElementById('body').appendChild(fountainContainer);
-
 }
 
 function playAceSlot(slotIndex){
@@ -38,60 +37,34 @@ function playAceSlot(slotIndex){
     container.style.top = '0px';
     container.style.left = Size.ySlot(slotIndex) + 'px';
     container.style.position = 'fixed';
+    container.style.zIndex = '-1';
     container.appendChild(image);
     document.getElementById('body').appendChild(container);
 }
 
-function assignLowerCoordinates(cards){
+function assignLowerCoordinates(reverseCards, faceupCards){
     var i = 0;
     var x = 0;
     var y = Size.upperBoardHeight();
     for (var rowCount=1;rowCount <= 7;rowCount++){
         for (var colCount=rowCount;colCount < 7;colCount++){
             x = colCount * (Size.cardWidth() + Size.rightCardPadding());
-            cards[i].coord[0] = x;
-            cards[i].coord[1] = y;
-            cards[i].setDisplayStatus(0);
+            reverseCards[i].moveTo(x, y);
+            reverseCards[i].setDisplayStatus(Card.DISPLAY_TOP_BACK());
             i++;
         }
         y += Size.cardHeight() / 5;
     }
     x = 0;
     y = Size.upperBoardHeight();
+    i = 0;
     for (var j=0;j<7;j++){
-        cards[i].coord[0] = x;
-        cards[i].coord[1] = y;
-        cards[i].displayStatus = 2;
-        cards[i].divClassName = 'cardholderMoveable';
+        faceupCards[i].moveTo(x, y);
+        faceupCards[i].setDisplayStatus(Card.DISPLAY_FULL_FRONT());
         i++;
         x += Size.cardWidth() + Size.rightCardPadding();
         y += Size.cardHeight() / 5;
     }
-    return cards
-}
-
-function buildLowerBoard(cards){
-    for (var card of cards){
-        placeOneCard(card);
-    }
-}
-
-function placeOneCard(card){
-    var container = document.createElement("div");
-    container.className = card.divClassName;
-    container.style.top = card.coord[1] + "px";
-    container.style.left = card.coord[0] + 'px';
-    container.id = IDConverter.cardToContainer(card.id);
-    if (card.divClassName == 'cardholderMoveable'){
-        dragElement(container);
-    }
-    var image = new Image();
-    image.width = Size.cardWidth();
-    image.height = card.getHeight();
-    image.src = card.getImageFile();
-    image.id = IDConverter.cardToImage(card.id);
-    container.appendChild(image);
-    document.getElementById('body').appendChild(container);
 }
 
 function getImage(card){
@@ -219,7 +192,7 @@ function dragElement(elmnt) {
                     moveStack(movingCard, targetCard);
                     if (allFountainCards.has(movingCard)){
                         allFountainCards.delete(movingCard);
-                        delete fDisplayed[0];
+                        fDisplayed.splice(0,1);
                     }
                     return;
                 }

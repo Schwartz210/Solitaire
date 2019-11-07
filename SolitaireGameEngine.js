@@ -6,17 +6,8 @@ class SolitaireGameEngine {
     }
 
     reset(){
-        this.deck.reset();
         setBackGround();
-        this.buildLowerBoard();
+        this.deck.reset();
         fReset(this.deck.fountainCards);
-
     }
-
-
-    buildLowerBoard(){
-        buildLowerBoard(this.deck.getCardsByDisplayStatus(Card.DISPLAY_TOP_BACK()));
-        buildLowerBoard(this.deck.getCardsByDisplayStatus(Card.DISPLAY_FULL_FRONT()));
-    }
-
 }
