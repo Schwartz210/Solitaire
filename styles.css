@@ -1,3 +1,8 @@
+:root{
+    --cardWidth: 100px;
+    --cardHeightFull: 200px;
+}
+
 div.cardholderMoveable {
     position: absolute;
     display: block;
@@ -19,4 +24,15 @@ div.backgroundContainer {
     top: 0px;
     position: fixed;
     z-index: -2;
+}
+
+img.aceslot {
+    width: var(--cardWidth);
+    height: var(--cardHeightFull);
+}
+
+div.aceslot{
+    top: 0px;
+    position: fixed;
+    z-index: -1;
 }

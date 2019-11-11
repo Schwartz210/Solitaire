@@ -7,24 +7,21 @@ var fSlots = [Size.ySlot(1), Size.ySlot(1)+Size.cardWidthLeftSeg(), Size.ySlot(1
 function fReset(cards){
     fAvailable = cards;
     for (var card of cards){
-        card.setDisplayStatus(Card.DISPLAY_HIDDEN());
+        card.setDisplayStatus(Card.DISPLAY_HIDDEN(), 'fReset');
         allFountainCards.add(card);
     }
-    cardLinks();
 }
-
-
 
 function displayFountainCards(){
     fDisplayed[0].moveTo(fSlots[2], 0);
-    fDisplayed[0].setDisplayStatus(Card.DISPLAY_FULL_FRONT());
+    fDisplayed[0].setDisplayStatus(Card.DISPLAY_FULL_FRONT(), 'displayFountainCards');
     if (fDisplayed[1] != null){
         fDisplayed[1].moveTo(fSlots[1], 0);
-        fDisplayed[1].setDisplayStatus(Card.DISPLAY_LEFT());
+        fDisplayed[1].setDisplayStatus(Card.DISPLAY_LEFT(), 'displayFountainCards');
     }
     if (fDisplayed[2] != null){
         fDisplayed[2].moveTo(fSlots[0], 0);
-        fDisplayed[2].setDisplayStatus(Card.DISPLAY_LEFT());
+        fDisplayed[2].setDisplayStatus(Card.DISPLAY_LEFT(), 'displayFountainCards');
     }
 }
 
@@ -33,7 +30,7 @@ function resetAvailable(){
     var temp;
     while (fDisplayed.length > 0){
         temp = fDisplayed.pop();
-        temp.setDisplayStatus(Card.DISPLAY_HIDDEN());
+        temp.setDisplayStatus(Card.DISPLAY_HIDDEN(), 'resetAvailable');
         tempList.push(temp);
     }
     while (fUnavailable.length > 0){
@@ -47,10 +44,16 @@ function resetAvailable(){
 }
 
 function cardLinks(){
-    for (var i=0;i<fAvailable.length-1;i++){
-        fAvailable[i+1].upCard = fAvailable[i];
+
+    for (var card of fUnavailable){
+        card.upCard = null;
     }
+    for (var i=0;i<fDisplayed.length-1;i++){
+        fDisplayed[i].upCard = fDisplayed[i+1];
+    }
+
 }
+
 
 function fOnclick(){
     var temp;
@@ -60,7 +63,7 @@ function fOnclick(){
     }
     while (fDisplayed.length > 0){
         temp = fDisplayed.pop();
-        temp.setDisplayStatus(Card.DISPLAY_HIDDEN());
+        temp.setDisplayStatus(Card.DISPLAY_HIDDEN(), 'fOnclick');
         fUnavailable.push(temp);
     }
     for (var i=0;i<3;i++){
@@ -68,6 +71,7 @@ function fOnclick(){
             fDisplayed.push(fAvailable.pop());
         }
     }
+    cardLinks();
     displayFountainCards();
     if (fAvailable.length == 0){
         document.getElementById('fountain').src = 'Art/emptyfountain.png';

@@ -30,14 +30,11 @@ function setBackGround(){
 
 function playAceSlot(slotIndex){
     var image = new Image();
-    image.width = Size.cardWidth();
-    image.height = Size.cardHeight();
+    image.className = 'aceslot';
     image.src = 'Art/aceslot.png';
     var container = document.createElement("div");
-    container.style.top = '0px';
+    container.className = 'aceslot';
     container.style.left = Size.ySlot(slotIndex) + 'px';
-    container.style.position = 'fixed';
-    container.style.zIndex = '-1';
     container.appendChild(image);
     document.getElementById('body').appendChild(container);
 }
@@ -50,7 +47,7 @@ function assignLowerCoordinates(reverseCards, faceupCards){
         for (var colCount=rowCount;colCount < 7;colCount++){
             x = colCount * (Size.cardWidth() + Size.rightCardPadding());
             reverseCards[i].moveTo(x, y);
-            reverseCards[i].setDisplayStatus(Card.DISPLAY_TOP_BACK());
+            reverseCards[i].setDisplayStatus(Card.DISPLAY_TOP_BACK(), 'assignLowerCoordinates');
             i++;
         }
         y += Size.cardHeight() / 5;
@@ -60,7 +57,7 @@ function assignLowerCoordinates(reverseCards, faceupCards){
     i = 0;
     for (var j=0;j<7;j++){
         faceupCards[i].moveTo(x, y);
-        faceupCards[i].setDisplayStatus(Card.DISPLAY_FULL_FRONT());
+        faceupCards[i].setDisplayStatus(Card.DISPLAY_FULL_FRONT(), 'assignLowerCoordinates');
         i++;
         x += Size.cardWidth() + Size.rightCardPadding();
         y += Size.cardHeight() / 5;
@@ -81,29 +78,46 @@ function getImage(card){
 }
 
 function stackCard(element, targetCard, movingCard){
-    slotTracker.alter(movingCard.coord[0], '-');
+    if (movingCard.upCard != null){
+        movingCard.upCard.setDisplayStatus(Card.DISPLAY_FULL_FRONT());
+    }
     if (targetCard != null){
-        slotTracker.alter(targetCard.coord[0], '+');
         targetCard.downCard = movingCard;
         movingCard.upCard = targetCard;
-        movingCard.coord[0] = targetCard.coord[0];
-        movingCard.coord[1] = targetCard.coord[1] + Size.cardHeightTop();
-        movingCard.setDisplayStatus(Card.DISPLAY_FULL_FRONT());
-        targetCard.setDisplayStatus(Card.DISPLAY_TOP_FRONT());
+        movingCard.moveTo(targetCard.coord[0], targetCard.coord[1] + Size.cardHeightTop());
+        movingCard.setDisplayStatus(Card.DISPLAY_FULL_FRONT(), 'stackCard');
+        targetCard.setDisplayStatus(Card.DISPLAY_TOP_FRONT(), 'stackCard');
     } else {
         var mouseX = parseInt(String(element.style.left).replace('px',''));
-        movingCard.coord[0] = slotTracker.getSlot(mouseX);
-        movingCard.coord[1] = 0;
+        movingCard.moveTo(slotTracker.getSlot(mouseX), 0);
+    }
+}
+
+function moveStack(movingCard, targetCard, element){
+    var cardOrder;
+    if (targetCard != null){
+        cardOrder = [targetCard, movingCard];
+    } else {
+        var mouseX = parseInt(String(element.style.left).replace('px',''));
+        movingCard.moveTo(slotTracker.getSlot(mouseX), Size.upperBoardHeight());
+        cardOrder = [movingCard];
     }
 
-    element.style.left = movingCard.coord[0] + 'px';
-    element.style.top = movingCard.coord[1] + 'px';
+    while (movingCard.downCard != null){
+        cardOrder.push(movingCard.downCard);
+        movingCard = movingCard.downCard;
+    }
+    for (var i=0;i<cardOrder.length-1;i++){
+        targetCard = cardOrder[i];
+        movingCard = cardOrder[i+1];
+        stackCard(document.getElementById(IDConverter.cardToContainer(movingCard.id)), targetCard, movingCard);
+    }
 }
 
 function displayFullBackOfLowestCoveredCard(vacatedCardXAxis){
-    var candidates = gameEngine.deck.getCardsByDisplayStatus(0, null);
+    var candidates = gameEngine.deck.getCardsByDisplayStatus(Card.DISPLAY_TOP_BACK(), null);
     var cardToShow;
-    var max = -1;
+    var max = Size.upperBoardHeight()-1;
     for (var candidate of candidates){
         if (candidate.coord[0] == vacatedCardXAxis && candidate.coord[1] > max){
             max = candidate.coord[1];
@@ -111,7 +125,7 @@ function displayFullBackOfLowestCoveredCard(vacatedCardXAxis){
         }
     }
     if (cardToShow != null){
-        cardToShow.setDisplayStatus(Card.DISPLAY_FULL_BACK());
+        cardToShow.setDisplayStatus(Card.DISPLAY_FULL_BACK(), 'displayFullBackOfLowestCoveredCard');
     }
 }
 
@@ -175,56 +189,42 @@ function dragElement(elmnt) {
         elmnt.style.zIndex = "0";
         var movingCardId = IDConverter.containerToCard(elmnt.id);
         var movingCard = gameEngine.deck.cardMap.get(movingCardId);
-        if (gameEngine.aceSlot.isAceSlot(pos3, pos4) != null){
+        var legalPlay = false;
+        if (gameEngine.aceSlot.isAceSlot(pos3, pos4) != null){  //check if card is played in Ace Slot
             if (gameEngine.aceSlot.canPlace(movingCard, pos3, pos4)){
-                displayFullBackOfLowestCoveredCard(movingCard.coord[0]);
-                gameEngine.aceSlot.place(movingCard, pos3, pos4);
-                return;
-            }
-        }
-        for (var targetCard of gameEngine.deck.getCardsByDisplayStatus(Card.DISPLAY_FULL_FRONT(), movingCardId)){
-            if (targetCard.collision(pos3, pos4)){
-                if (movingCard.canStack(targetCard)){
-                    if (movingCard.upCard != null){
-                        movingCard.upCard.setDisplayStatus(Card.DISPLAY_FULL_FRONT());
-                    }
+                if (movingCard.upCard == null){
                     displayFullBackOfLowestCoveredCard(movingCard.coord[0]);
-                    moveStack(movingCard, targetCard);
-                    if (allFountainCards.has(movingCard)){
-                        allFountainCards.delete(movingCard);
-                        fDisplayed.splice(0,1);
+                }
+                gameEngine.aceSlot.place(movingCard, pos3, pos4);
+                legalPlay = true;
+            }
+        } else if (slotTracker.isEmptySlot(pos3) && movingCard.rank == 'K'){  //check if card id King dropped into empty slot
+            displayFullBackOfLowestCoveredCard(movingCard.coord[0]);
+            moveStack(movingCard, null, elmnt);
+            legalPlay = true;
+        } else {
+            for (var targetCard of gameEngine.deck.getCardsByDisplayStatus(Card.DISPLAY_FULL_FRONT(), movingCardId)){  //check for regular lower board play
+                if (targetCard.collision(pos3, pos4)){
+                    if (movingCard.canStack(targetCard)){
+                        if (movingCard.upCard != null){
+                            movingCard.upCard.setDisplayStatus(Card.DISPLAY_FULL_FRONT(), 'drop');
+                        }
+                        displayFullBackOfLowestCoveredCard(movingCard.coord[0]);
+                        moveStack(movingCard, targetCard);
+
+                        legalPlay = true;
                     }
-                    return;
                 }
             }
         }
-        if (slotTracker.isEmptySlot(pos3) && movingCard.rank == 'K'){
-            displayFullBackOfLowestCoveredCard(movingCard.coord[0]);
-            moveStack(movingCard, null, elmnt);
+        if (!legalPlay){
+            elmnt.style.left = movingCard.coord[0] + 'px';
+            elmnt.style.top = movingCard.coord[1] + 'px';
+        } else {
+            if (allFountainCards.has(movingCard)){
+                allFountainCards.delete(movingCard);
+                fDisplayed.splice(0,1);
+            }
         }
-        elmnt.style.left = movingCard.coord[0] + 'px';
-        elmnt.style.top = movingCard.coord[1] + 'px';
-    }
-}
-
-function moveStack(movingCard, targetCard, element){
-    var cardOrder;
-    if (targetCard != null){
-        cardOrder = [targetCard, movingCard];
-    } else {
-        var mouseX = parseInt(String(element.style.left).replace('px',''));
-        movingCard.coord[0] = slotTracker.getSlot(mouseX);
-        movingCard.coord[1] = Size.upperBoardHeight();
-        cardOrder = [movingCard];
-    }
-
-    while (movingCard.downCard != null){
-        cardOrder.push(movingCard.downCard);
-        movingCard = movingCard.downCard;
-    }
-    for (var i=0;i<cardOrder.length-1;i++){
-        targetCard = cardOrder[i];
-        movingCard = cardOrder[i+1];
-        stackCard(document.getElementById(IDConverter.cardToContainer(movingCard.id)), targetCard, movingCard);
     }
 }

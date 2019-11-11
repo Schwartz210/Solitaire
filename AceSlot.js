@@ -2,6 +2,7 @@ class AceSlot {
     constructor(){
         this.slotMap = {'Clubs': null, 'Spades': null, 'Hearts': null, 'Diamonds': null}
         this.slotCardCount = {330: 0, 440: 0, 550: 0, 660: 0};
+        this.cardsInSlots= new Set();
     }
 
     isAceSlot(mouseX, mouseY){
@@ -41,19 +42,15 @@ class AceSlot {
 
     place(card, mouseX, mouseY){
         if (card.upCard != null){
-            card.upCard.setDisplayStatus(Card.DISPLAY_FULL_FRONT());
+            console.log('place');
+            card.upCard.setDisplayStatus(Card.DISPLAY_FULL_FRONT(), 'place');
         }
         var slot = this.isAceSlot(mouseX, mouseY);
-        card.coord[0] = slot;
-        card.coord[1] = 0;
-        var containerId = IDConverter.cardToContainer(card.id);
-        var container = document.getElementById(containerId);
-        container.style.left = card.coord[0] + 'px';
-        container.style.top = card.coord[1] + 'px';
+        card.moveTo(slot, 0);
+        this.cardsInSlots.add(card);
         if (allFountainCards.has(card)){
             allFountainCards.delete(card);
-            delete fDisplayed[0];
-            console.log(fDisplayed);
+            fDisplayed.splice(0, 1);
         }
         if (card.rank == 'A'){
             if (this.slotMap[card.suit] != null){
@@ -65,7 +62,8 @@ class AceSlot {
             var index = Deck.getRankScore(card.rank) - 2;
             var rank = ranks[index];
             var cardBelow = gameEngine.deck.cardMap.get(rank+'-'+card.suit);
-            cardBelow.setDisplayStatus(Card.DISPLAY_HIDDEN());
+            cardBelow.setDisplayStatus(Card.DISPLAY_HIDDEN(), 'place');
+            card.upCard = cardBelow;
         }
         this.slotCardCount[slot] += 1;
 
